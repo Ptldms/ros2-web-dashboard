@@ -1,0 +1,12 @@
+1. bag 파일 실행
+ros2 bag play 4planning_nocheon_250822/ -l  (예시)
+
+2. react 실행 (~/workspace/web_dashboard/frontend)
+npm start
+
+3. WebSocket 활성화 (~/workspace/web_dashboard/backend)
+node server.js
+
+4. ros2 bridge 실행 (~/workspace/web_dashboard/ros2_bridge)
+ros2 run ros2_bridge yaw_node
+-> 추후에 launch 파일로 수정할 예정
