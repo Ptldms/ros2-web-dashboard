@@ -1,12 +1,26 @@
+[ 초기 환경 구성 ]
+1. Frontend (~/workspace/web_dashboard/frontend)
+npm install
+
+2. Backend (~/workspace/web_dashboard/backend)
+npm install
+
+3. ros2_bridge (~/workspace/web_dashboard/ros2_bridge)
+colcon build
+source install/setup.bash
+
+--------------------------------------------------------------
+
+[ 실행 방법 ]
 1. bag 파일 실행
 ros2 bag play 4planning_nocheon_250822/ -l  (예시)
 
 2. react 실행 (~/workspace/web_dashboard/frontend)
 npm start
 
-3. WebSocket 활성화 (~/workspace/web_dashboard/backend)
+3. 서버 실행 (~/workspace/web_dashboard/backend)
 node server.js
 
-4. ros2 bridge 실행 (~/workspace/web_dashboard/ros2_bridge)
+4. ros2_bridge 노드 실행 (~/workspace/web_dashboard/ros2_bridge)
 ros2 run ros2_bridge yaw_node
 -> 추후에 launch 파일로 수정할 예정
