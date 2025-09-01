@@ -11,6 +11,8 @@ setup(
     entry_points={
         'console_scripts': [
             'yaw_node = ros2_bridge.yaw_node:main',
+            'speed_node = ros2_bridge.speed_node:main',
+            'steer_node = ros2_bridge.steer_node:main',
         ],
     },
 )
