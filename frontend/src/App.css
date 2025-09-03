@@ -68,10 +68,6 @@
   box-shadow: 0px 4px 12px rgba(0,0,0,0.3);
 }
 
-.card.gps-card {
-  overflow: hidden;
-}
-
 .card .card-title {
   font-size: 16px;
   font-weight: bold;
@@ -81,6 +77,6 @@
   text-align: center;
 }
 
-.gps-card .gps-navigator {
-  flex-grow: 1;
+.card svg {
+  overflow: visible;
 }
