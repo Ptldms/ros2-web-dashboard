@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-export default function YawChart() {
+export default function SpeedChart() {
   const [data, setData] = useState([]);
   const startTimeRef = useRef(Date.now());
 
@@ -25,10 +25,15 @@ export default function YawChart() {
       setData((prev) => {
         const last = prev[prev.length - 1] || {};
 
-        // yaw 값이 없으면 이전 값 유지
+        // 새 값이 있으면 업데이트, 없으면 이전 값 유지
         const merged = {
           time: elapsedSec,
-          raw: message.yaw !== undefined ? message.yaw : last.raw,
+          cmd_speed:
+            message.cmd_speed !== undefined ? message.cmd_speed : last.cmd_speed,
+          current_speed:
+            message.current_speed !== undefined
+              ? message.current_speed
+              : last.current_speed,
         };
 
         const updated = [...prev, merged];
@@ -51,20 +56,28 @@ export default function YawChart() {
             domain={["dataMin", "dataMax"]}
             tickFormatter={(t) => t.toFixed(1) + "s"}
           />
-          {/* Yaw 범위: -π ~ π */}
-          <YAxis domain={[-3.2, 3.2]} />
+          {/* 속도는 0 이상 */}
+          <YAxis domain={[0, "dataMax"]} />
           <Tooltip
             labelFormatter={(label) => `${label.toFixed(2)} sec`}
-            formatter={(value) => [value.toFixed(3), "Yaw"]}
+            formatter={(value, name) => [value.toFixed(2), name]}
           />
           <Legend />
           <Line
             type="linear"
-            dataKey="raw"
-            stroke="#1F77B4"
+            dataKey="cmd_speed"
+            stroke="#FF6B6B"
             dot={false}
-            name="Global Yaw"
-            isAnimationActive={false} // 실시간 반응 빠르게
+            name="Command Speed"
+            isAnimationActive={false}
+          />
+          <Line
+            type="linear"
+            dataKey="current_speed"
+            stroke="#4ECDC4"
+            dot={false}
+            name="Current Speed"
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>

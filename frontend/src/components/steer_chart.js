@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-export default function YawChart() {
+export default function SteerChart() {
   const [data, setData] = useState([]);
   const startTimeRef = useRef(Date.now());
 
@@ -25,14 +25,21 @@ export default function YawChart() {
       setData((prev) => {
         const last = prev[prev.length - 1] || {};
 
-        // yaw 값이 없으면 이전 값 유지
         const merged = {
           time: elapsedSec,
-          raw: message.yaw !== undefined ? message.yaw : last.raw,
+          // 새 값이 있으면 업데이트, 없으면 직전 값 유지
+          cmd_steer:
+            message.cmd_steer !== undefined
+              ? message.cmd_steer
+              : last.cmd_steer,
+          // current_steer:
+          //   message.current_steer !== undefined
+          //     ? message.current_steer
+          //     : last.current_steer,
         };
 
         const updated = [...prev, merged];
-        // 최근 50초 데이터만 유지
+        // 50초 윈도우 유지
         return updated.filter((point) => elapsedSec - point.time <= 50);
       });
     };
@@ -51,20 +58,30 @@ export default function YawChart() {
             domain={["dataMin", "dataMax"]}
             tickFormatter={(t) => t.toFixed(1) + "s"}
           />
-          {/* Yaw 범위: -π ~ π */}
-          <YAxis domain={[-3.2, 3.2]} />
+          <YAxis
+            domain={[0, "dataMax"]}
+            tickFormatter={(value) => value.toFixed(2)}
+          />
           <Tooltip
             labelFormatter={(label) => `${label.toFixed(2)} sec`}
-            formatter={(value) => [value.toFixed(3), "Yaw"]}
+            formatter={(value, name) => [value.toFixed(2), name]}
           />
           <Legend />
           <Line
             type="linear"
-            dataKey="raw"
-            stroke="#1F77B4"
+            dataKey="cmd_steer"
+            stroke="#FF6B6B"
             dot={false}
-            name="Global Yaw"
-            isAnimationActive={false} // 실시간 반응 빠르게
+            name="Command Steer"
+            isAnimationActive={false}
+          />
+          <Line
+            type="linear"
+            dataKey="current_steer"
+            stroke="#4ECDC4"
+            dot={false}
+            name="Current Steer"
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>
