@@ -8,6 +8,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 
 export default function SteerChart() {
@@ -57,11 +58,14 @@ export default function SteerChart() {
             type="number"
             domain={["dataMin", "dataMax"]}
             tickFormatter={(t) => t.toFixed(1) + "s"}
+            axisLine={true}
+            tickLine={true}
           />
           <YAxis
             domain={[0, "dataMax"]}
             tickFormatter={(value) => value.toFixed(2)}
           />
+          <ReferenceLine y={0} stroke="#000" strokeWidth={1} />
           <Tooltip
             labelFormatter={(label) => `${label.toFixed(2)} sec`}
             formatter={(value, name) => [value.toFixed(2), name]}
@@ -70,7 +74,7 @@ export default function SteerChart() {
           <Line
             type="linear"
             dataKey="cmd_steer"
-            stroke="#FF6B6B"
+            stroke="#D62728"
             dot={false}
             name="Command Steer"
             isAnimationActive={false}
@@ -78,7 +82,7 @@ export default function SteerChart() {
           <Line
             type="linear"
             dataKey="current_steer"
-            stroke="#4ECDC4"
+            stroke="#1F77B4"
             dot={false}
             name="Current Steer"
             isAnimationActive={false}

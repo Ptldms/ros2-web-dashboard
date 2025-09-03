@@ -63,7 +63,7 @@ export default function YawChart() {
             dataKey="raw"
             stroke="#1F77B4"
             dot={false}
-            name="Global Yaw"
+            name="Yaw"
             isAnimationActive={false} // 실시간 반응 빠르게
           />
         </LineChart>
