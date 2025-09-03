@@ -16,16 +16,23 @@ export default function YawChart() {
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:5000");
+
     ws.onmessage = (event) => {
-      const yaw = JSON.parse(event.data);
+      const message = JSON.parse(event.data); // 통합 JSON
       const now = Date.now();
       const elapsedSec = (now - startTimeRef.current) / 1000;
 
       setData((prev) => {
-        // 새 데이터 추가
-        const updated = [...prev, { time: elapsedSec, raw: yaw.raw }];
+        const last = prev[prev.length - 1] || {};
 
-        // 50초 버퍼 유지
+        // yaw 값이 없으면 이전 값 유지
+        const merged = {
+          time: elapsedSec,
+          raw: message.yaw !== undefined ? message.yaw : last.raw,
+        };
+
+        const updated = [...prev, merged];
+        // 최근 50초 데이터만 유지
         return updated.filter((point) => elapsedSec - point.time <= 50);
       });
     };
@@ -44,13 +51,15 @@ export default function YawChart() {
             domain={["dataMin", "dataMax"]}
             tickFormatter={(t) => t.toFixed(1) + "s"}
           />
-          <YAxis domain={[-3.2, 3.2]} /> {/* -pi ~ +pi */}
+          {/* Yaw 범위: -π ~ π */}
+          <YAxis domain={[-3.2, 3.2]} />
           <Tooltip
             labelFormatter={(label) => `${label.toFixed(2)} sec`}
+            formatter={(value) => [value.toFixed(3), "Yaw"]}
           />
           <Legend />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="raw"
             stroke="#1F77B4"
             dot={false}

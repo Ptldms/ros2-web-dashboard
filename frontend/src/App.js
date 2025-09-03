@@ -13,7 +13,7 @@ function App() {
       <div className='top-row'>
         <div className='card'>
           <h2 className="card-title">Yaw Estimation (PlotJuggler)</h2>
-          {/*<YawChart />*/}
+          <YawChart />
         </div>
         <div className='card gps-card'>
           <h2 className="card-title">YAW?GPSNavigator?</h2>
@@ -29,7 +29,7 @@ function App() {
       <div className='bottom-row'>
         <div className='card'>
           <h2 className="card-title">Speed Comparison</h2>
-          {/*<SpeedChart />*/}
+          <SpeedChart />
         </div>
         <div className='card'>
           <h2 className="card-title">Steering Comparison</h2>

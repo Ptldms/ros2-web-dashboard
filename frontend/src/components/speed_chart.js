@@ -16,24 +16,31 @@ export default function SpeedChart() {
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:5000");
+
     ws.onmessage = (event) => {
-        const speedData = JSON.parse(event.data);
-        const now = Date.now();
-        const elapsedSec = (now - startTimeRef.current) / 1000;
+      const message = JSON.parse(event.data); // 통합 JSON
+      const now = Date.now();
+      const elapsedSec = (now - startTimeRef.current) / 1000;
 
-        setData((prev) => {
-            const last = prev[prev.length - 1] || {};
-            const merged = {
-                time: elapsedSec,
-                cmd_speed: speedData.cmd_speed !== undefined ? speedData.cmd_speed : last.cmd_speed,
-                current_speed: speedData.current_speed !== undefined ? speedData.current_speed : last.current_speed,
-            };
+      setData((prev) => {
+        const last = prev[prev.length - 1] || {};
 
-            const updated = [...prev, merged];
-            return updated.filter((point) => elapsedSec - point.time <= 50);
-        });
+        // 새 값이 있으면 업데이트, 없으면 이전 값 유지
+        const merged = {
+          time: elapsedSec,
+          cmd_speed:
+            message.cmd_speed !== undefined ? message.cmd_speed : last.cmd_speed,
+          current_speed:
+            message.current_speed !== undefined
+              ? message.current_speed
+              : last.current_speed,
+        };
+
+        const updated = [...prev, merged];
+        // 최근 50초 데이터만 유지
+        return updated.filter((point) => elapsedSec - point.time <= 50);
+      });
     };
-
 
     return () => ws.close();
   }, []);
@@ -49,14 +56,15 @@ export default function SpeedChart() {
             domain={["dataMin", "dataMax"]}
             tickFormatter={(t) => t.toFixed(1) + "s"}
           />
-          <YAxis domain={[0, "dataMax"]} /> {/* 속도는 0 이상 */}
+          {/* 속도는 0 이상 */}
+          <YAxis domain={[0, "dataMax"]} />
           <Tooltip
             labelFormatter={(label) => `${label.toFixed(2)} sec`}
             formatter={(value, name) => [value.toFixed(2), name]}
           />
           <Legend />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="cmd_speed"
             stroke="#FF6B6B"
             dot={false}
@@ -64,7 +72,7 @@ export default function SpeedChart() {
             isAnimationActive={false}
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="current_speed"
             stroke="#4ECDC4"
             dot={false}

@@ -16,24 +16,33 @@ export default function SteerChart() {
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:5000");
+
     ws.onmessage = (event) => {
-        const steerData = JSON.parse(event.data);
-        const now = Date.now();
-        const elapsedSec = (now - startTimeRef.current) / 1000;
+      const message = JSON.parse(event.data); // 통합 JSON
+      const now = Date.now();
+      const elapsedSec = (now - startTimeRef.current) / 1000;
 
-        setData((prev) => {
-            const last = prev[prev.length - 1] || {};
-            const merged = {
-                time: elapsedSec,
-                cmd_steer: steerData.cmd_steer !== undefined ? steerData.cmd_steer : last.cmd_steer,
-                // current_steer: steerData.current_steer !== undefined ? steerData.current_steer : last.current_steer,
-            };
+      setData((prev) => {
+        const last = prev[prev.length - 1] || {};
 
-            const updated = [...prev, merged];
-            return updated.filter((point) => elapsedSec - point.time <= 50);
-        });
+        const merged = {
+          time: elapsedSec,
+          // 새 값이 있으면 업데이트, 없으면 직전 값 유지
+          cmd_steer:
+            message.cmd_steer !== undefined
+              ? message.cmd_steer
+              : last.cmd_steer,
+          // current_steer:
+          //   message.current_steer !== undefined
+          //     ? message.current_steer
+          //     : last.current_steer,
+        };
+
+        const updated = [...prev, merged];
+        // 50초 윈도우 유지
+        return updated.filter((point) => elapsedSec - point.time <= 50);
+      });
     };
-
 
     return () => ws.close();
   }, []);
@@ -49,8 +58,8 @@ export default function SteerChart() {
             domain={["dataMin", "dataMax"]}
             tickFormatter={(t) => t.toFixed(1) + "s"}
           />
-          <YAxis 
-            domain={[0, "dataMax"]} 
+          <YAxis
+            domain={[0, "dataMax"]}
             tickFormatter={(value) => value.toFixed(2)}
           />
           <Tooltip
@@ -59,19 +68,19 @@ export default function SteerChart() {
           />
           <Legend />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="cmd_steer"
             stroke="#FF6B6B"
             dot={false}
-            name="Command steer"
+            name="Command Steer"
             isAnimationActive={false}
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="current_steer"
             stroke="#4ECDC4"
             dot={false}
-            name="Current steer"
+            name="Current Steer"
             isAnimationActive={false}
           />
         </LineChart>
