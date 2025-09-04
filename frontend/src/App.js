@@ -4,7 +4,7 @@ import YawChart from './components/yaw_chart';
 import GForceMeter from './components/gforce_meter';
 import SpeedChart from './components/speed_chart';
 import SteerChart from './components/steer_chart';
-import HealthStatus from './components/health_status';  
+import HealthStatus from './components/health_status';
 
 function App() {
   return (

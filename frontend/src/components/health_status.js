@@ -54,7 +54,7 @@ export default function HealthStatus() {
       padding: "16px",
       borderRadius: "8px",
       fontFamily: "monospace",
-      backgroundColor: "#f4f5f7",
+      backgroundColor: "#ffffff",
       boxShadow: "0px 4px 12px rgba(0,0,0,0.3)",
       color: "#000000",
       lineHeight: "1.5",
@@ -69,7 +69,7 @@ export default function HealthStatus() {
       border: "1px solid #555",
       padding: "8px",
       borderRadius: "6px",
-      backgroundColor: "#f4f5f7",
+      backgroundColor: "#ffffff",
     },
     sectionTitle: {
       fontWeight: "bold",

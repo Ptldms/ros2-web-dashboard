@@ -22,5 +22,4 @@ npm start
 node server.js
 
 4. ros2_bridge 노드 실행 (~/workspace/web_dashboard/ros2_bridge)
-ros2 run ros2_bridge yaw_node
--> 추후에 launch 파일로 수정할 예정
+ros2 run ros2_bridge ws_node
