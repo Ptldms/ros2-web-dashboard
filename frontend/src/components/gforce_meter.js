@@ -5,11 +5,11 @@ export default function GForceMeter() {
   const maxG = 1.5; // 최대 G 값 (±2G)
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:5000");
+    const ws = new WebSocket("ws://192.168.0.34:5000");  // TODO: ip 주소 변경
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-
+      
       // g_longitudinal: 앞뒤, g_lateral: 좌우
       if (data.g_longitudinal !== undefined && data.g_lateral !== undefined) {
         setGForce({

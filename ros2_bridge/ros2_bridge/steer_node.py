@@ -7,7 +7,7 @@ import websocket
 
 '''
 /cmd/steer, /current_steer? 구독
-TODO: 현재 조향각 토픽 추가
+현재 조향각 토픽 추가해야됨.
 '''
 
 class SteerNode(Node):

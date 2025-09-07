@@ -1,7 +1,7 @@
 const WebSocket = require("ws");
 
 // 5000 Port 사용
-const wss = new WebSocket.Server({ port : 5000 });
+const wss = new WebSocket.Server({ host: "0.0.0.0", port: 5000 });
 
 wss.on("connection", (ws) => {
     console.log("Client connected");
@@ -15,4 +15,4 @@ wss.on("connection", (ws) => {
     });
 });
 
-console.log("WebSocket server running on ws://localhost:5000");
+console.log("WebSocket server running on ws://0.0.0.0:5000");

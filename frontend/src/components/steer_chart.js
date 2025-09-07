@@ -16,7 +16,7 @@ export default function SteerChart() {
   const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:5000");
+    const ws = new WebSocket("ws://192.168.0.34:5000");  // TODO: ip 주소 변경
 
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data); // 통합 JSON
@@ -43,7 +43,7 @@ export default function SteerChart() {
         // 50초 윈도우 유지
         return updated.filter((point) => elapsedSec - point.time <= 50);
       });
-    };
+    };  
 
     return () => ws.close();
   }, []);

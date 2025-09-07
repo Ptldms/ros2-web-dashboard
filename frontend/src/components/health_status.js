@@ -1,4 +1,4 @@
-    import React from "react";
+import React from "react";
 
 const healthData = {
   perception: [
@@ -15,7 +15,7 @@ const healthData = {
     { name: "Speed", status: true, value: "5.8m/s" },
     { name: "Corridor", status: true, value: "4.2m" },
     { name: "Cones L:6 R:5", status: true, value: "" },
-    { name: "FSM State", status: null, value: "[TODO]" },
+    { name: "FSM State", status: null, value: "[0]" },
   ],
   control: [
     { name: "Steer", status: true, value: "52Hz" },
@@ -93,7 +93,7 @@ export default function HealthStatus() {
 
   return (
     <div style={styles.container}>
-      <h2 style={{ ...styles.sectionTitle, textAlign: "center", fontSize: "20px" }}>Health Status</h2>
+      <h2 style={{ ...styles.sectionTitle, textAlign: "center", fontSize: "20px" }}>Autonomous Vehicle Monitor</h2>
 
       <div style={styles.sectionGrid}>
         {/* Perception */}
