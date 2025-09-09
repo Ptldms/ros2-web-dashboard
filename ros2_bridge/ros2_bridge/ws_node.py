@@ -19,7 +19,7 @@ class VehicleWSNode(Node):
 
         # WebSocketApp 비동기 실행
         self.ws = websocket.WebSocketApp(
-            "ws://192.168.0.34:5000",  # TODO: ip 주소 변경
+            "ws://localhost:5000",
             on_open=lambda ws: self.get_logger().info("WebSocket Connected"),
             on_error=lambda ws, err: self.get_logger().warn(f"WebSocket Error: {err}"),
             on_close=lambda ws, close_status_code, close_msg: self.get_logger().info("WebSocket Closed")

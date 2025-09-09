@@ -16,7 +16,7 @@ export default function SteerChart() {
   const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
-    const ws = new WebSocket("ws://192.168.0.34:5000");  // TODO: ip 주소 변경
+    const ws = new WebSocket("ws://localhost:5000");
 
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data); // 통합 JSON

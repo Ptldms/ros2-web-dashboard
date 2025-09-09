@@ -31,7 +31,7 @@ export default function GPSNavigator() {
 
     // yaw WebSocket 연결
     useEffect(() => {
-        const yawSocket = new WebSocket("ws://192.168.0.34:5000");  // TODO: ip 주소 변경
+        const yawSocket = new WebSocket("ws://:5000");
         yawSocket.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
@@ -47,7 +47,7 @@ export default function GPSNavigator() {
 
     // gps WebSocket 연결
     useEffect(() => {
-        const gpsSocket = new WebSocket("ws://192.168.0.34:5000");  // TODO: ip 주소 변경
+        const gpsSocket = new WebSocket("ws://localhost:5000");
         gpsSocket.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
