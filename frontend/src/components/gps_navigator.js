@@ -31,7 +31,10 @@ export default function GPSNavigator() {
 
     // yaw WebSocket 연결
     useEffect(() => {
-        const yawSocket = new WebSocket("ws://:5000");
+        const host = process.env.REACT_APP_WS_HOST || "localhost";
+        const port = process.env.REACT_APP_WS_PORT || "5000";
+        const ws = new WebSocket(`ws://${host}:${port}`);
+
         yawSocket.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
@@ -47,7 +50,10 @@ export default function GPSNavigator() {
 
     // gps WebSocket 연결
     useEffect(() => {
-        const gpsSocket = new WebSocket("ws://localhost:5000");
+        const host = process.env.REACT_APP_WS_HOST || "localhost";
+        const port = process.env.REACT_APP_WS_PORT || "5000";
+        const ws = new WebSocket(`ws://${host}:${port}`);
+        
         gpsSocket.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);

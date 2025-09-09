@@ -5,7 +5,10 @@ export default function GForceMeter() {
   const maxG = 1.5; // 최대 G 값 (±2G)
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:5000");
+    const host = process.env.REACT_APP_WS_HOST || "localhost";
+    const port = process.env.REACT_APP_WS_PORT || "5000";
+    const ws = new WebSocket(`ws://${host}:${port}`);
+
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);

@@ -12,33 +12,77 @@ source install/setup.bash
 --------------------------------------------------------------
 
 [ 실행 방법 (bag ver) ]
-1. bag 파일 실행
-ros2 bag play 4planning_nocheon_250822/ -l  (예시)
+1. IP 주소 설정 (인터넷/Wi-Fi 연결 여부에 따라 선택)
 
-2. react 실행 (~/workspace/web_dashboard/frontend)
-npm start
+  - 인터넷/Wi-Fi 연결 시 (핸드폰 등 다른 기기 접속 가능)
+  a. 현재 PC의 IP 주소 확인
+    hostname -I
+    또는
+    ip addr show
+    (여러 개가 출력될 경우 Wi-Fi IP 주소 선택, PC와 핸드폰은 같은 Wi-Fi에 연결되어야 함)
 
-3. 서버 실행 (~/workspace/web_dashboard/backend)
+  b. Frontend 환경 변수 설정
+    frontend/.env 파일에서 아래처럼 변경
+    REACT_APP_WS_HOST=<IP 주소>
+    (예시: REACT_APP_WS_HOST=192.168.0.06)
+
+  - 인터넷/Wi-Fi 연결 안됨 (해당 PC에서만 접속 가능)
+  a. frontend/.env 파일 삭제 또는 frontend/.env 파일의 REACT_APP_WS_HOST 코드 제거
+
+2. 서버 실행 (~/workspace/web_dashboard/backend)
 node server.js
 
-4. ros2_bridge 노드 실행 (~/workspace/web_dashboard/ros2_bridge)
-ros2 run ros2_bridge ws_node
+3. ros2_bridge 노드 실행 (~/workspace/web_dashboard/ros2_bridge)
+
+  - 인터넷/Wi-Fi 연결 시
+  ros2 run ros2_bridge ws_node --ros-args -p ws_host:=<IP 주소> -p ws_port:=5000
+
+  - 인터넷/Wi-Fi 연결 안됨
+  ros2 run ros2_bridge ws_node --ros-args -p ws_host:=localhost -p ws_port:=5000
+
+4. react 실행 (~/workspace/web_dashboard/frontend)
+npm start
+
+5. bag 파일 실행
+ros2 bag play 4planning_nocheon_250822/ -l  (예시)
 
 --------------------------------------------------------------
 
 [ 실행 방법 (실시간 ver) ]
-1. 토픽 발행 확인
+1. IP 주소 설정 (인터넷/Wi-Fi 연결 여부에 따라 선택)
+
+  - 인터넷/Wi-Fi 연결 시 (핸드폰 등 다른 기기 접속 가능)
+  a. 현재 PC의 IP 주소 확인
+    hostname -I
+    또는
+    ip addr show
+    (여러 개가 출력될 경우 Wi-Fi IP 주소 선택, PC와 핸드폰은 같은 Wi-Fi에 연결되어야 함)
+
+  b. Frontend 환경 변수 설정
+    frontend/.env 파일에서 아래처럼 변경
+    REACT_APP_WS_HOST=<IP 주소>
+    (예시: REACT_APP_WS_HOST=192.168.0.06)
+
+  - 인터넷/Wi-Fi 연결 안됨 (해당 PC에서만 접속 가능)
+  a. frontend/.env 파일 삭제 또는 frontend/.env 파일의 REACT_APP_WS_HOST 코드 제거
+
+2. 토픽 발행 확인
   a. /cmd/speed         (std_msgs/msg/Float32)
   b. /current_speed     (std_msgs/msg/Float32)
   c. /cmd/steer         (std_msgs/msg/Float32)
   d. /odometry/filtered (nav_msgs/msg/Odometry)
   e. /imu/processed     (sensor_msgs/msg/Imu)
 
-2. react 실행 (~/workspace/web_dashboard/frontend)
-npm start
-
 3. 서버 실행 (~/workspace/web_dashboard/backend)
 node server.js
 
 4. ros2_bridge 노드 실행 (~/workspace/web_dashboard/ros2_bridge)
-ros2 run ros2_bridge ws_node
+
+  - 인터넷/Wi-Fi 연결 시
+  ros2 run ros2_bridge ws_node --ros-args -p ws_host:=<IP 주소> -p ws_port:=5000
+
+  - 인터넷/Wi-Fi 연결 안됨
+  ros2 run ros2_bridge ws_node --ros-args -p ws_host:=localhost -p ws_port:=5000
+
+5. react 실행 (~/workspace/web_dashboard/frontend)
+npm start
