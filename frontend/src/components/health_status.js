@@ -3,6 +3,10 @@ import React, { useEffect, useState } from "react";
 const planning = [
   { name: "Cam1", unit: "Hz" },
   { name: "Cam2", unit: "Hz" },
+  { name: "LiDAR", unit: "Hz" },
+  { name: "Fusion", unit: " cones" },
+  { name: "GPS", unit: "Fix" },
+  { name: "IMU", unit: "Hz" },
 ];
 
 export default function HealthStatus() {
@@ -95,13 +99,12 @@ export default function HealthStatus() {
                       <span style={{ color: data.color }}>
                         {data.status === "GO" ? "✓" : "✗"}
                       </span>
-                      <span>{data.freq}</span>
+                      <span>{data.show}</span>
                       <span>{s.unit}</span>
                     </>
                   ) : (
                     <>
-                      <span style={{ color: "gray" }}>-</span>
-                      <span>--</span>
+                      <span style={{ color: "gray" }}>--</span>
                       <span>{s.unit}</span>
                     </>
                   )}
