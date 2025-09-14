@@ -1,13 +1,38 @@
 import React, { useEffect, useState } from "react";
 
-const planning = [
+const perception = [
   { name: "Cam1", unit: "Hz" },
   { name: "Cam2", unit: "Hz" },
   { name: "LiDAR", unit: "Hz" },
-  { name: "Fusion", unit: " cones" },
+  { name: "Fusion", unit: "cones" },
   { name: "GPS", unit: "Fix" },
   { name: "IMU", unit: "Hz" },
 ];
+
+const planning = [
+  { name: "Global", unit: "pts" },
+  { name: "Local", unit: "Hz" },
+  { name: "Speed", unit: "m/s" },
+  { name: "Corridor", unit: "m" },
+  { name: "Cones(L)", unit: "" },
+  { name: "Cones(R)", unit: "" },
+]
+
+const control = [
+  { name: "Steer", unit: "Hz" },
+  { name: "RPM", unit: "" },
+  { name: "CAN TX", unit: "Hz" },
+  { name: "CAN RX", unit: "rpm" },
+  { name: "Error", unit: "°" },
+  { name: "Arduino", unit: "Hz" },
+]
+
+const safety = [
+  { name: "E-STOP", unit: "" },
+  { name: "MODE", unit: "" },
+  { name: "CAN", unit: "" },
+  { name: "AEB", unit: "red" },
+]
 
 export default function HealthStatus() {
   const [sensorData, setSensorData] = useState({});
@@ -69,6 +94,18 @@ export default function HealthStatus() {
       justifyContent: "space-between",
       marginBottom: "2px",
     },
+    safetyDiv: {
+      display: "flex",
+      flexDirection: "rows",
+      alignItems: "center",
+    },
+    safetyRow: {
+      display: "flex",
+      gap: "16px",
+    },
+    alertRow: {
+      marginBottom: "4px",
+    },
   };
 
   return (
@@ -80,7 +117,7 @@ export default function HealthStatus() {
           fontSize: "20px",
         }}
       >
-        AUTONOMOUS VEHICLE MONITOR
+        Health Status
       </h2>
 
       <div style={styles.sectionGrid}>
@@ -88,8 +125,8 @@ export default function HealthStatus() {
         <div style={styles.sectionBox}>
           <h3 style={styles.sectionTitle}>PERCEPTION</h3>
 
-          {planning.map((s) => {
-            const data = sensorData[s.name]; // 실시간 데이터 or undefined
+          {perception.map((s) => {
+            const data = sensorData[s.name];
             return (
               <div key={s.name} style={styles.row}>
                 <span>▪ {s.name}</span>
@@ -117,12 +154,103 @@ export default function HealthStatus() {
         {/* Planning */}
         <div style={styles.sectionBox}>
           <h3 style={styles.sectionTitle}>PLANNING</h3>
+
+          {planning.map((s) => {
+            const data = sensorData[s.name];
+            return (
+              <div key={s.name} style={styles.row}>
+                <span>▪ {s.name}</span>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  {data ? (
+                    <>
+                      <span style={{ color: data.color }}>
+                        {data.status === "GO" ? "✓" : "✗"}
+                      </span>
+                      <span>{data.show}</span>
+                      <span>{s.unit}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ color: "gray" }}>--</span>
+                      <span>{s.unit}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Control */}
         <div style={styles.sectionBox}>
           <h3 style={styles.sectionTitle}>CONTROL</h3>
+
+          {control.map((s) => {
+            const data = sensorData[s.name];
+            return (
+              <div key={s.name} style={styles.row}>
+                <span>▪ {s.name}</span>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  {data ? (
+                    <>
+                      <span style={{ color: data.color }}>
+                        {data.status === "GO" ? "✓" : "✗"}
+                      </span>
+                      <span>{data.show}</span>
+                      <span>{s.unit}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ color: "gray" }}>--</span>
+                      <span>{s.unit}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
+      </div>
+
+      {/* Safety Systems */}
+      <div style={styles.sectionBox}>
+        <h3 style={styles.sectionTitle}>SAFETY SYSTEMS</h3>
+        <div style={styles.safetyRow}>
+          {safety.map((s) => {
+            const data = sensorData[s.name];
+            return (
+              <div key={s.name} style={styles.safetyDiv}>
+                <span style={{ marginRight: "12px"}}>▪ {s.name}:</span>
+                <div style={styles.safetyRow}>
+                  {data ? (
+                    <>
+                      <span style={{ color: data.color }}>
+                        {data.status === "GO" ? "✓" : "✗"}
+                      </span>
+                      <span>{data.show}</span>
+                      <span>{s.unit}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ color: "gray" }}>--</span>
+                      <span>{s.unit}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      
+      {/* Critical Alerts */}
+      <div style={styles.sectionBox}>
+        <h3 style={styles.sectionTitle}>CRITICAL ALERTS:</h3>
+      </div>
+
+      {/* Performance Matrics */}
+      <div style={styles.sectionBox}>
+        <h3 style={styles.sectionTitle}>PERFORMANCE METRICS:</h3>
       </div>
     </div>
   );
