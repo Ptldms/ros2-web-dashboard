@@ -534,48 +534,52 @@ class MonitorNode(Node):
         return round(hz, 1)
     
     def get_sensor_data(self):
-        data_list = []
-
-        for topic, info in self.sensors.items():
-            name = info["name"]
-            status = "UNKNOWN"
-            value = None
-            color = "gray"
-
-            # TODO: 각 토픽별 check criteria 정의
-            if name in ["Cam1, Cam2"]:
-                hz = self.calculate_hz(topic)
-                value = hz
-                min_hz = info.get("min_hz", 0)
-                max_hz = info.get("max_hz", float("inf"))
-                
-                if min_hz < hz < max_hz:
-                    status, color = "GO", "lime"
-                else:
-                    status, color = "NO-GO", "red"
-
-            elif name == "LiDAR":
-                hz = self.calculate_hz(topic)
-                points = getattr(info, "last_msg_points", 0)
-                value = hz
-                min_hz = info.get("min_hz", 0)
-                max_hz = info.get("max_hz", float("inf"))
-                min_points = info.get("min_points", 0)
-
-                if min_hz < hz < max_hz and points > min_points:
-                    status, color = "GO", "lime"
-                else: 
-                    status, color = "NO-GO", "red"
-
+        return {
+            topic: self.sensor_data.get(topic, {
+                "status": "NO DATA",
+                "value": None,
+                "color": "gray"
+            })
+            for topic in self.sensor_config
+        }
 
     async def send_data(self):
         data = self.get_sensor_data()
 
         try:
-            await self.ws.send(json.dumps(data))
-        except Exception as e:
-            self.get_logger().warn(f"Send failed: {e}")
+            # ws가 None이 아니고 연결 상태이면 전송 시도
+            if self.ws is None:
+                self.get_logger().warn("WebSocket is None, skip sending")
+                return
 
+            # JSON으로 직렬화 불가능한 값이 들어있을 수 있으니 안전하게 변환
+            try:
+                payload = json.dumps(data)
+            except TypeError:
+                # 직렬화 불가 항목을 문자열로 변환해서 보내기 (간단한 폴백)
+                safe_data = {}
+                for k, v in data.items():
+                    try:
+                        json.dumps(v)
+                        safe_data[k] = v
+                    except TypeError:
+                        safe_data[k] = {
+                            "status": str(v.get("status", "")) if isinstance(v, dict) else str(v),
+                            "value": str(v.get("value", "")) if isinstance(v, dict) else str(v),
+                            "color": str(v.get("color", "gray")) if isinstance(v, dict) else "gray"
+                        }
+                payload = json.dumps(safe_data)
+
+            await self.ws.send(payload)
+
+        except Exception as e:
+            # 경고 로그 남기고 ws 객체 초기화해 재접속 시도하게 함
+            self.get_logger().warn(f"Send failed: {e}")
+            try:
+                # 안전하게 ws 참조 해제
+                self.ws = None
+            except Exception:
+                pass
 
 def main():
     rclpy.init()
