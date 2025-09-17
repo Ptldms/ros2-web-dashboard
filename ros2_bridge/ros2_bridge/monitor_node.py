@@ -7,7 +7,7 @@ from sensor_msgs.msg import Image, PointCloud2, NavSatFix
 from nav_msgs.msg import Path
 from std_msgs.msg import Float32MultiArray, Float32, Int32, UInt8
 from visualization_msgs.msg import Marker
-from throttle_msgs.msg import ThrottleData
+# from throttle_msgs.msg import ThrottleData
 
 import websockets
 import time
@@ -147,7 +147,7 @@ class MonitorNode(Node):
         self.create_subscription(Int32, "/target_rpm", self.rpm_cb, 10)                           # RPM
         self.create_subscription(Int32, "/current_speed", self.canRX_cb, 10)                      # CAN RX
         self.create_subscription(Float32, "/encoder_angle", self.error_cb, 10)                    # Error
-        self.create_subscription(ThrottleData, "/throttle_data", self.arduino_cb, 10)             # Arduino (.data: E-STOP, .asms: MODE)
+        # self.create_subscription(ThrottleData, "/throttle_data", self.arduino_cb, 10)             # Arduino (.data: E-STOP, .asms: MODE)
         self.create_subscription(UInt8, "/estop", self.aeb_cb, 10)                                # AEB (cone_labeling_k)
 
     def cam1_cb(self, msg):
@@ -534,14 +534,16 @@ class MonitorNode(Node):
         return round(hz, 1)
     
     def get_sensor_data(self):
-        return {
-            topic: self.sensor_data.get(topic, {
+        data = {}
+        for topic, config in self.sensor_config.items():
+            name = config["name"]
+            value = self.sensor_data.get(topic, {
                 "status": "NO DATA",
                 "value": None,
                 "color": "gray"
             })
-            for topic in self.sensor_config
-        }
+            data[name] = value
+        return data
 
     async def send_data(self):
         data = self.get_sensor_data()
@@ -554,7 +556,9 @@ class MonitorNode(Node):
 
             # JSON으로 직렬화 불가능한 값이 들어있을 수 있으니 안전하게 변환
             try:
-                payload = json.dumps(data)
+                payload = json.dumps([
+                    {"name": key, **value} for key, value in data.items()
+                ])
             except TypeError:
                 # 직렬화 불가 항목을 문자열로 변환해서 보내기 (간단한 폴백)
                 safe_data = {}

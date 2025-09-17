@@ -16,6 +16,7 @@ setup(
             'acceleration_node = ros2_bridge.acceleration_node:main',
             'monitor_node = ros2_bridge.monitor_node:main',
             'ws_node = ros2_bridge.ws_node:main',
+            'test_publisher = ros2_bridge.test_publisher:main'
         ],
     },
 )

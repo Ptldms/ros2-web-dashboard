@@ -45,6 +45,7 @@ export default function HealthStatus() {
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data); // Python에서 보낸 JSON 파싱
+
       const newData = {};
       data.forEach((item) => {
         newData[item.name] = item; // Cam1, Cam2 데이터 저장
@@ -136,7 +137,7 @@ export default function HealthStatus() {
                       <span style={{ color: data.color }}>
                         {data.status === "GO" ? "✓" : "✗"}
                       </span>
-                      <span>{data.show}</span>
+                      <span>{data.value}</span>
                       <span>{s.unit}</span>
                     </>
                   ) : (
@@ -166,7 +167,7 @@ export default function HealthStatus() {
                       <span style={{ color: data.color }}>
                         {data.status === "GO" ? "✓" : "✗"}
                       </span>
-                      <span>{data.show}</span>
+                      <span>{data.value}</span>
                       <span>{s.unit}</span>
                     </>
                   ) : (
@@ -196,7 +197,7 @@ export default function HealthStatus() {
                       <span style={{ color: data.color }}>
                         {data.status === "GO" ? "✓" : "✗"}
                       </span>
-                      <span>{data.show}</span>
+                      <span>{data.value}</span>
                       <span>{s.unit}</span>
                     </>
                   ) : (
@@ -227,7 +228,7 @@ export default function HealthStatus() {
                       <span style={{ color: data.color }}>
                         {data.status === "GO" ? "✓" : "✗"}
                       </span>
-                      <span>{data.show}</span>
+                      <span>{data.value}</span>
                       <span>{s.unit}</span>
                     </>
                   ) : (
