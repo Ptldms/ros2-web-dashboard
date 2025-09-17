@@ -20,7 +20,7 @@ const planning = [
 
 const control = [
   { name: "Steer", unit: "Hz" },
-  { name: "RPM", unit: "" },
+  { name: "RPM", unit: "rpm" },
   { name: "CAN TX", unit: "Hz" },
   { name: "CAN RX", unit: "rpm" },
   { name: "Error", unit: "°" },
