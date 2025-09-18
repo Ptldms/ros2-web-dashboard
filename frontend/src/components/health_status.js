@@ -36,6 +36,7 @@ const safety = [
 
 export default function HealthStatus() {
   const [sensorData, setSensorData] = useState({});
+  const [alerts, setAlerts] = useState([]);
 
   // WebSocket 연결
   useEffect(() => {
@@ -47,10 +48,15 @@ export default function HealthStatus() {
       const data = JSON.parse(event.data); // Python에서 보낸 JSON 파싱
 
       const newData = {};
-      data.forEach((item) => {
-        newData[item.name] = item; // Cam1, Cam2 데이터 저장
-      });
+      if (data.sensors) {
+        const sensorArray = Array.isArray(data.sensors) ? data.sensors : Object.values(data.sensors);
+        sensorArray.forEach((item) => {
+          newData[item.name] = item;
+        });
+      }
+
       setSensorData(newData);
+      setAlerts(data.alerts || []);
     };
 
     ws.onclose = () => {
@@ -244,9 +250,14 @@ export default function HealthStatus() {
         </div>
       </div>
       
-      {/* Critical Alerts */}
+      {/* Alerts */}
       <div style={styles.sectionBox}>
-        <h3 style={styles.sectionTitle}>CRITICAL ALERTS:</h3>
+        <h3 style={styles.sectionTitle}>ALERTS:</h3>
+        {alerts.map((a, idx) => (
+          <div key={idx} style={styles.alertRow}>
+            <span>{a.level === "CRITICAL" ? "🔴" : "🟡"} {a.message}</span>
+          </div>
+        ))}
       </div>
 
       {/* Performance Matrics */}

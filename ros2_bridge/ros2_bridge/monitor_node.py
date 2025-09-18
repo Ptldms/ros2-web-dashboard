@@ -553,9 +553,44 @@ class MonitorNode(Node):
 
             data[name] = value
         return data
+    
+    def get_alerts(self):
+        alerts = []
+
+        data = self.get_sensor_data()  # 센서 이름 기준
+
+        # CRITICAL
+        estop = data.get("AEB")
+        if estop and estop.get("status") == "NO-GO":
+            alerts.append({"level": "CRITICAL", "message": "E-STOP 활성화"})
+
+        can_speed = data.get("CAN RX")
+        if can_speed and can_speed.get("status") == "NO-GO":
+            alerts.append({"level": "CRITICAL", "message": "CAN 통신 두절"})
+
+        sensor_ok = all(v.get("status") == "GO" for v in data.values())
+        if not sensor_ok:
+            alerts.append({"level": "CRITICAL", "message": "모든 센서 실패"})
+
+        # WARNING
+        gps = data.get("GPS")
+        if gps and gps.get("status") == "NO-GO":
+            alerts.append({"level": "WARNING", "message": "GPS 정확도 감소"})
+
+        fusion = data.get("Fusion")
+        if fusion and fusion.get("value", 0) < 4:
+            alerts.append({"level": "WARNING", "message": "콘 감지 부족 (<4개)"})
+
+        error = data.get("Error")
+        if error and abs(error.get("value", 0)) > 2.0:
+            alerts.append({"level": "WARNING", "message": "제어 추종 오차 증가"})
+
+        return alerts
+
 
     async def send_data(self):
         data = self.get_sensor_data()
+        alerts = self.get_alerts()
 
         try:
             # ws가 None이 아니고 연결 상태이면 전송 시도
@@ -563,14 +598,16 @@ class MonitorNode(Node):
                 self.get_logger().warn("WebSocket is None, skip sending")
                 return
 
-            # JSON으로 직렬화 불가능한 값이 들어있을 수 있으니 안전하게 변환
+            # JSON으로 직렬화
             try:
-                payload = json.dumps([
-                    {"name": key, **value} for key, value in data.items()
-                ])
+                payload = json.dumps({
+                    "sensors": [{"name": key, **value} for key, value in data.items()],
+                    "alerts": alerts
+                })
             except TypeError:
-                # 직렬화 불가 항목을 문자열로 변환해서 보내기 (간단한 폴백)
+                # 직렬화 불가하면 fallback
                 safe_data = {}
+
                 for k, v in data.items():
                     try:
                         json.dumps(v)
@@ -581,7 +618,10 @@ class MonitorNode(Node):
                             "value": str(v.get("value", "")) if isinstance(v, dict) else str(v),
                             "color": str(v.get("color", "gray")) if isinstance(v, dict) else "gray"
                         }
-                payload = json.dumps(safe_data)
+                payload = json.dumps({
+                    "sensors": safe_data,
+                    "alerts": alerts
+                })
 
             await self.ws.send(payload)
 
