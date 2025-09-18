@@ -3,7 +3,7 @@ import json
 import rclpy
 from rclpy.node import Node
 
-from sensor_msgs.msg import Image, PointCloud2, NavSatFix
+from sensor_msgs.msg import Image, PointCloud2, NavSatFix, Imu
 from nav_msgs.msg import Path
 from std_msgs.msg import Float32MultiArray, Float32, Int32, UInt8
 from visualization_msgs.msg import Marker
@@ -134,10 +134,10 @@ class MonitorNode(Node):
         self.create_subscription(Image, "/usb_cam_1/image_raw", self.cam1_cb, 10)                 # Cam1
         self.create_subscription(Image, "/usb_cam_2/image_raw", self.cam2_cb, 10)                 # Cam2
         self.create_subscription(PointCloud2, "/ouster/points", self.lidar_cb, 10)                      # LiDAR
-        self.create_subscription(Image, "/cone/fused", self.fusion_cb, 10)                        # Fusion
+        self.create_subscription(Marker, "/cone/fused", self.fusion_cb, 10)                        # Fusion
         self.create_subscription(NavSatFix, "/ublox_gps_node/fix", self.gps_cb, 10)               # GPS
-        self.create_subscription(Image, "/imu/data", self.imu_cb, 10)                             # IMU
-        self.create_subscription(Image, "/resampled_path", self.global_cb, 10)                    # Global
+        self.create_subscription(Imu, "/imu/data", self.imu_cb, 10)                             # IMU
+        self.create_subscription(Path, "/resampled_path", self.global_cb, 10)                    # Global
         self.create_subscription(Path, "/local_planned_path", self.local_cb, 10)                  # Local
         self.create_subscription(Float32MultiArray, "/desired_speed_profile", self.speed_cb, 10)  # Speed        
         self.create_subscription(Marker, "/drivable_corridor", self.corridor_cb, 10)              # Corridor
@@ -546,6 +546,11 @@ class MonitorNode(Node):
                 "value": None,
                 "color": "gray"
             })
+
+            # value가 숫자면 소수점 첫째자리까지 반올림
+            if isinstance(value.get("value"), (int, float)):
+                value["value"] = round(value["value"], 1)
+
             data[name] = value
         return data
 
