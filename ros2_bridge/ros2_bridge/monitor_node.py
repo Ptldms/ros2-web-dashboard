@@ -506,7 +506,11 @@ class MonitorNode(Node):
         uri = f"ws://{self.ws_host}:{self.ws_port}"
         while True:
             try:
-                async with websockets.connect(uri) as websocket:
+                async with websockets.connect(
+                    uri,
+                    ping_interval=20,   # 20초마다 ping
+                    ping_timeout=10     # pong 없으면 10초 안에 timeout
+                ) as websocket:
                     self.get_logger().info("WebSocket connected")
                     self.ws = websocket
                     while True:
