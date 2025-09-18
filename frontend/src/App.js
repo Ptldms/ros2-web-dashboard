@@ -1,40 +1,44 @@
 import logo from './logo.svg';
 import './App.css';
 import YawChart from './components/yaw_chart';
-import GPSNavigator from './components/gps_navigator';
-import GForce_Meter from './components/GForce_Meter';
+import GForceMeter from './components/gforce_meter';
 import SpeedChart from './components/speed_chart';
 import SteerChart from './components/steer_chart';
+import HealthStatus from './components/health_status';
 
 function App() {
   return (
     <div className='dashboard'>
-      {/* 위쪽: Yaw (PlotJuggler) + ? + G-Force Meter*/}
+      {/* 위쪽: Yaw (PlotJuggler) + Yaw (NavBall) + G-Force Meter*/}
       <div className='top-row'>
         <div className='card'>
           <h2 className="card-title">Yaw Estimation (PlotJuggler)</h2>
-          <YawChart />
+          {/*<YawChart />*/}
         </div>
         <div className='card'>
-          <h2 className="card-title">YAW NavBall</h2>
-          {/*<GPSNavigator />*/}
+          <h2 className="card-title">YAW Estimation (NavBall)</h2>
+          {/*<YawNavBall />*/}
         </div>
         <div className='card'>
           <h2 className="card-title">G-Force Meter</h2>
-          <GForce_Meter />
+          {/*<GForceMeter />*/}
         </div>
       </div>
 
-      {/* 아래쪽: Speed + Steering */}
-      <div className='bottom-row'>
+      {/* 가운데: Speed + Steering */}
+      <div className='middle-row'>
         <div className='card'>
           <h2 className="card-title">Speed Comparison</h2>
-          <SpeedChart />
+          {/*<SpeedChart />*/}
         </div>
         <div className='card'>
           <h2 className="card-title">Steering Comparison</h2>
-          <SteerChart />
+          {/*<SteerChart />*/}
         </div>
+      </div>
+      {/* 아래쪽: Speed + Steering */}
+      <div className='bottom-row'>
+        <HealthStatus />
       </div>
     </div>
   );

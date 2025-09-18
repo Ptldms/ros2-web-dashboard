@@ -15,7 +15,9 @@ export default function SpeedChart() {
   const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:5000");
+    const host = process.env.REACT_APP_WS_HOST || "localhost";
+    const port = process.env.REACT_APP_WS_PORT || "5000";
+    const ws = new WebSocket(`ws://${host}:${port}`);
 
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data); // 통합 JSON
@@ -66,7 +68,7 @@ export default function SpeedChart() {
           <Line
             type="linear"
             dataKey="cmd_speed"
-            stroke="#FF6B6B"
+            stroke="#D62728"
             dot={false}
             name="Command Speed"
             isAnimationActive={false}
@@ -74,7 +76,7 @@ export default function SpeedChart() {
           <Line
             type="linear"
             dataKey="current_speed"
-            stroke="#4ECDC4"
+            stroke="#1F77B4"
             dot={false}
             name="Current Speed"
             isAnimationActive={false}

@@ -8,6 +8,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 
 export default function SteerChart() {
@@ -15,7 +16,9 @@ export default function SteerChart() {
   const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:5000");
+    const host = process.env.REACT_APP_WS_HOST || "localhost";
+    const port = process.env.REACT_APP_WS_PORT || "5000";
+    const ws = new WebSocket(`ws://${host}:${port}`);
 
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data); // 통합 JSON
@@ -42,7 +45,7 @@ export default function SteerChart() {
         // 50초 윈도우 유지
         return updated.filter((point) => elapsedSec - point.time <= 50);
       });
-    };
+    };  
 
     return () => ws.close();
   }, []);
@@ -57,11 +60,14 @@ export default function SteerChart() {
             type="number"
             domain={["dataMin", "dataMax"]}
             tickFormatter={(t) => t.toFixed(1) + "s"}
+            axisLine={true}
+            tickLine={true}
           />
           <YAxis
             domain={[0, "dataMax"]}
             tickFormatter={(value) => value.toFixed(2)}
           />
+          <ReferenceLine y={0} stroke="#000" strokeWidth={1} />
           <Tooltip
             labelFormatter={(label) => `${label.toFixed(2)} sec`}
             formatter={(value, name) => [value.toFixed(2), name]}
@@ -70,7 +76,7 @@ export default function SteerChart() {
           <Line
             type="linear"
             dataKey="cmd_steer"
-            stroke="#FF6B6B"
+            stroke="#D62728"
             dot={false}
             name="Command Steer"
             isAnimationActive={false}
@@ -78,7 +84,7 @@ export default function SteerChart() {
           <Line
             type="linear"
             dataKey="current_steer"
-            stroke="#4ECDC4"
+            stroke="#1F77B4"
             dot={false}
             name="Current Steer"
             isAnimationActive={false}

@@ -17,9 +17,19 @@ class VehicleWSNode(Node):
     def __init__(self):
         super().__init__('vehicle_ws_node')
 
+        # ROS2 파라미터 선언
+        self.declare_parameter('ws_host', 'localhost')
+        self.declare_parameter('ws_port', 5000)
+
+        host = self.get_parameter('ws_host').get_parameter_value().string_value
+        port = self.get_parameter('ws_port').get_parameter_value().integer_value
+
+        ws_url = f"ws://{host}:{port}"
+        self.get_logger().info(f"Connecting to WebSocket: {ws_url}")
+
         # WebSocketApp 비동기 실행
         self.ws = websocket.WebSocketApp(
-            "ws://localhost:5000",
+            ws_url,
             on_open=lambda ws: self.get_logger().info("WebSocket Connected"),
             on_error=lambda ws, err: self.get_logger().warn(f"WebSocket Error: {err}"),
             on_close=lambda ws, close_status_code, close_msg: self.get_logger().info("WebSocket Closed")
