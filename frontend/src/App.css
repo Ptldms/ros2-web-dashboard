@@ -46,14 +46,12 @@
   min-height: 100vh;
 }
 
-.top-row {
-  display: flex;
-  flex-direction: row;
-}
-
+.top-row,
 .middle-row {
   display: flex;
   flex-direction: row;
+  justify-content: center;
+  align-items: center;
 }
 
 .card {
@@ -75,8 +73,4 @@
   margin-bottom: 18px;
   color: #000000;
   text-align: center;
-}
-
-.card svg {
-  overflow: visible;
 }

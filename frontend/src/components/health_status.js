@@ -12,18 +12,15 @@ const perception = [
 const planning = [
   { name: "Global", unit: "pts" },
   { name: "Local", unit: "Hz" },
+  { name: "Steering Angle", unit: "°"},
   { name: "Speed", unit: "m/s" },
-  { name: "Corridor", unit: "m" },
-  { name: "Cones(L)", unit: "" },
-  { name: "Cones(R)", unit: "" },
 ]
 
 const control = [
-  { name: "Steer", unit: "Hz" },
-  { name: "RPM", unit: "rpm" },
+  { name: "Steer", unit: "°" },
+  { name: "Speed", unit: "m/s" },
   { name: "CAN TX", unit: "Hz" },
   { name: "CAN RX", unit: "rpm" },
-  { name: "Error", unit: "°" },
   { name: "Arduino", unit: "Hz" },
 ]
 
@@ -189,15 +186,20 @@ export default function HealthStatus() {
 
           {planning.map((s) => {
             const data = sensorData[s.name];
+            const noStatusIcons = ["Steering Angle", "Speed"];
+            const showStatusIcon = !noStatusIcons.includes(s.name);
+            
             return (
               <div key={s.name} style={styles.row}>
                 <span>▪ {s.name}</span>
                 <div style={{ display: "flex", gap: "10px" }}>
                   {data ? (
                     <>
-                      <span style={{ color: data.color }}>
-                        {data.status === "GO" ? "✓" : "✗"}
-                      </span>
+                      {showStatusIcon && (
+                        <span style={{ color: data.color }}>
+                          {data.status === "GO" ? "✓" : "✗"}
+                        </span>
+                      )}
                       <span>{data.value}</span>
                       <span>{s.unit}</span>
                     </>

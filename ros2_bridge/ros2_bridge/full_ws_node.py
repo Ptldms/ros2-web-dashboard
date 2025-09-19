@@ -50,7 +50,7 @@ class FullWSNode(Node):
                 "min_hz": 10.0,
                 "min_points": 1000,
             },
-            "/cone/fused": {
+            "/cone/fused/ukf": {
                 "name": "Fusion",
                 "min_hz": 10.0,
                 "min_cones": 4,
@@ -60,7 +60,7 @@ class FullWSNode(Node):
                 "min_status": 2,
                 "max_cov": 0.0002,
             },
-            "/imu/data": {
+            "/imu/processed": {
                 "name": "IMU",
                 "min_hz": 95.0,
                 "max_hz": 105.0,
@@ -74,39 +74,24 @@ class FullWSNode(Node):
                 "min_hz": 20.0,
                 "min_length": 5,
             },
-            "/desired_speed_profile": {
+            "/cmd/speed": {
                 "name": "Speed",
-                "min_array_size": 0,
             },
-            "/drivable_corridor": {
-                "name": "Corridor",
-                "min_valid_triangles": 1,
+            "/cmd/steer": {
+                "name": "Steering Angle",
             },
-            "/left_cone_marker": {
-                "name": "Cones(L)",
-                "min_hz": 10.0,
-            },
-            "/right_cone_marker": {
-                "name": "Cones(R)",
-                "min_hz": 10.0,
-            },
-            "/steering_command": {
+            "/ctrl/steer": {
                 "name": "Steer",
                 "min_hz": 50.0,
             },
-            "/target_rpm": {
-                "name": "RPM",
+            "/ctrl/speed": {
+                "name": "Speed",
                 "max_hz": 100,
-                "max_rpm": 2000,
+                "max_speed": 2000.0,
             },
             "/current_speed": {
                 "name": "CAN RX",
                 "min_rpm": 500,
-            },
-            "/encoder_angle": {
-                "name": "Error",
-                "min_hz": 10.0,
-                "max_error": 2.0,
             },
             "/throttle_data": {
                 "name": "Arduino",
@@ -143,29 +128,24 @@ class FullWSNode(Node):
         self.create_subscription(Image, "/usb_cam_1/image_raw", self.cam1_cb, 10)                 # Cam1
         self.create_subscription(Image, "/usb_cam_2/image_raw", self.cam2_cb, 10)                 # Cam2
         self.create_subscription(PointCloud2, "/ouster/points", self.lidar_cb, 10)                # LiDAR
-        self.create_subscription(Marker, "/cone/fused", self.fusion_cb, 10)                       # Fusion
+        self.create_subscription(Marker, "/cone/fused/ukf", self.fusion_cb, 10)                   # Fusion
         self.create_subscription(NavSatFix, "/ublox_gps_node/fix", self.gps_cb, 10)               # GPS
-        self.create_subscription(Imu, "/imu/data", self.imu_cb, 10)                               # IMU
+
+        qos_profile = QoSProfile(depth=10)
+        qos_profile.reliability = ReliabilityPolicy.BEST_EFFORT
+        self.create_subscription(Imu, "/imu/processed", self.imu_cb, qos_profile)                 # IMU
         self.create_subscription(Path, "/resampled_path", self.global_cb, 10)                     # Global
         self.create_subscription(Path, "/local_planned_path", self.local_cb, 10)                  # Local
-        self.create_subscription(Float32MultiArray, "/desired_speed_profile", self.speed_cb, 10)  # Speed        
-        self.create_subscription(Marker, "/drivable_corridor", self.corridor_cb, 10)              # Corridor
-        self.create_subscription(Marker, "/left_cone_marker", self.conesL_cb, 10)                 # Cones(L)
-        self.create_subscription(Marker, "/right_cone_marker", self.conesR_cb, 10)                # Cones(R)
-        self.create_subscription(Float32, "/steering_command", self.steer_cb, 10)                 # Steer
-        self.create_subscription(Int32, "/target_rpm", self.rpm_cb, 10)                           # RPM
+        self.create_subscription(Float32, "/cmd/speed", self.planning_speed_cb, 10)               # Speed (Planning)  
+        self.create_subscription(Float32, "/cmd/steer", self.planning_steer_cb, 10)               # Steer (Planning)
+        self.create_subscription(Float32, "/ctrl/steer", self.control_steer_cb, 10)               # Steer (Control)
+        self.create_subscription(Float32, "/ctrl/speed", self.control_speed_cb, 10)               # Speed (Control)
         self.create_subscription(Float32, "/current_speed", self.canRX_cb, 10)                    # CAN RX
-        self.create_subscription(Float32, "/encoder_angle", self.error_cb, 10)                    # Error
         # self.create_subscription(ThrottleData, "/throttle_data", self.arduino_cb, 10)           # Arduino (.data: E-STOP, .asms: MODE)
         self.create_subscription(UInt8, "/estop", self.aeb_cb, 10)                                # AEB (cone_labeling_k)
 
         # Chart Subscriber
-        self.create_subscription(Float32, '/cmd/speed', self.cb_cmd_speed, 10)
-        self.create_subscription(Float32, '/cmd/steer', self.cb_cmd_steer, 10)
         self.create_subscription(Odometry, '/odometry/filtered', self.cb_odometry, 10)
-        qos_profile = QoSProfile(depth=10)
-        qos_profile.reliability = ReliabilityPolicy.BEST_EFFORT
-        self.create_subscription(Imu, '/imu/processed', self.cb_imu_vehicle, qos_profile)
 
         # 데이터 전송 주기
         self.create_timer(1.0, self.trigger_send_monitor)
@@ -225,7 +205,7 @@ class FullWSNode(Node):
         }
 
     def fusion_cb(self, msg):
-        topic = "/cone/fused"
+        topic = "/cone/fused/ukf"
         self._update_timestamps(topic)
 
         hz = self.calculate_hz(topic)
@@ -273,7 +253,7 @@ class FullWSNode(Node):
         }
 
     def imu_cb(self, msg):
-        topic = "/imu/data"
+        topic = "/imu/processed"
         self._update_timestamps(topic)
 
         hz = self.calculate_hz(topic)
@@ -286,6 +266,9 @@ class FullWSNode(Node):
             "value": hz,
             "color": "lime" if is_ok else "red"
         }
+
+        self.chart_data["g_longitudinal"] = msg.linear_acceleration.x / G_CONST
+        self.chart_data["g_lateral"] = msg.linear_acceleration.y / G_CONST
 
     def global_cb(self, msg):
         topic = "/resampled_path"
@@ -332,95 +315,42 @@ class FullWSNode(Node):
             "color": "lime" if is_ok else "red"
         }
 
-    def speed_cb(self, msg):
-        topic = "/desired_speed_profile"
+    def planning_speed_cb(self, msg):
+        topic = "/cmd/speed"
         self._update_timestamps(topic)
 
-        array_size = len(msg.data)
-        config = self.sensor_config[topic]
+        speed = msg.data
 
-        is_ok = array_size > config["min_array_size"]
-
-        if array_size > 0:
-            max_speed = max(msg.data)
-        else:
-            max_speed = 0.0
+        is_ok = speed is not None
 
         self.sensor_data[topic] = {
-            "status": "GO" if is_ok else "NO-GO",
-            "value": max_speed,
+            "status": "None",
+            "value": speed,
             "color": "lime" if is_ok else "red"
         }
 
-    # TODO: check criteria 수정
-    def corridor_cb(self, msg):
-        topic = "/drivable_corridor"
+        self.chart_data["cmd_speed"] = speed
+
+
+    def planning_steer_cb(self, msg):
+        topic = "/cmd/steer"
         self._update_timestamps(topic)
 
-        if hasattr(msg, 'points') and msg.type == 11:
-            valid_triangles = len(msg.points) // 3
-            
-            if len(msg.points) > 0:
-                x_coords = [point.x for point in msg.points]
-                width = max(x_coords) - min(x_coords)
-            else:
-                width = 0.0
-        else:
-            valid_triangles = 0
-            width = 0.0
-    
-        config = self.sensor_config[topic]
+        steer = msg.data
         
-        is_ok = valid_triangles >= config["min_valid_triangles"]
-        
+        is_ok = steer is not None
+
         self.sensor_data[topic] = {
-            "status": "GO" if is_ok else "NO-GO",
-            "value": width,
+            "status": "None",
+            "value": steer,
             "color": "lime" if is_ok else "red"
         }
 
-    def conesL_cb(self, msg):
-        topic = "/left_cone_marker"
-        self._update_timestamps(topic)
+        self.chart_data["cmd_steer"] = steer
 
-        hz = self.calculate_hz(topic)
-        config = self.sensor_config[topic]
 
-        is_ok = hz > config["min_hz"]
-
-        if hasattr(msg, 'points'):
-            num_cones = len(msg.points)
-        else:
-            num_cones = 0
-
-        self.sensor_data[topic] = {
-            "status": "GO" if is_ok else "NO-GO",
-            "value": num_cones,
-            "color": "lime" if is_ok else "red"
-        }
-    
-    def conesR_cb(self, msg):
-        topic = "/right_cone_marker"
-        self._update_timestamps(topic)
-
-        hz = self.calculate_hz(topic)
-        config = self.sensor_config[topic]
-
-        is_ok = hz > config["min_hz"]
-
-        if hasattr(msg, 'points'):
-            num_cones = len(msg.points)
-        else:
-            num_cones = 0
-
-        self.sensor_data[topic] = {
-            "status": "GO" if is_ok else "NO-GO",
-            "value": num_cones,
-            "color": "lime" if is_ok else "red"
-        }
-
-    def steer_cb(self, msg):
-        topic = "/steering_command"
+    def control_steer_cb(self, msg):
+        topic = "/ctrl/steer"
         self._update_timestamps(topic)
 
         hz = self.calculate_hz(topic)
@@ -437,19 +367,19 @@ class FullWSNode(Node):
             "color": "lime" if is_ok else "red"
         }
     
-    def rpm_cb(self, msg):
-        topic = "/target_rpm"
+    def control_speed_cb(self, msg):
+        topic = "/ctrl/speed"
         self._update_timestamps(topic)
 
         hz = self.calculate_hz(topic)
-        rpm = msg.data
+        speed = msg.data
         config = self.sensor_config[topic]
 
-        is_ok = hz == config["max_hz"] and rpm <= config["max_rpm"]
+        is_ok = hz == config["max_hz"] and speed <= config["max_speed"]
 
         self.sensor_data[topic] = {
             "status": "GO" if is_ok else "NO-GO",
-            "value": rpm,
+            "value": speed,
             "color": "lime" if is_ok else "red"
         }
 
@@ -469,28 +399,6 @@ class FullWSNode(Node):
             "color": "lime" if is_ok else "red"
         }
         self.chart_data["current_speed"] = float(rpm)
-
-    def error_cb(self, msg):
-        topic = "/encoder_angle"
-        self._update_timestamps(topic)
-
-        hz = self.calculate_hz(topic)
-        encoder_angle = msg.data
-
-        if hasattr(self, "last_steering_cmd"):
-            error = self.last_steering_cmd - encoder_angle
-        else:
-            error: None
-
-        config = self.sensor_config[topic]
-
-        is_ok = hz > config["min_hz"] and error < config["max_error"]
-        
-        self.sensor_data[topic] = {
-            "status": "GO" if is_ok else "NO-GO",
-            "value": error,
-            "color": "lime" if is_ok else "red"
-        }
 
     def arduino_cb(self, msg):
         topic = "/throttle_data"
@@ -523,12 +431,6 @@ class FullWSNode(Node):
         }
 
     # === Chart Callback ===
-    def cb_cmd_speed(self, msg):
-        self.chart_data["cmd_speed"] = msg.data
-
-    def cb_cmd_steer(self, msg):
-        self.chart_data["cmd_steer"] = msg.data
-
     def cb_odometry(self, msg):
         qx, qy, qz, qw = (
             msg.pose.pose.orientation.x,
@@ -538,12 +440,7 @@ class FullWSNode(Node):
         )
         # Yaw 계산 (Z축 기준)
         self.chart_data["yaw"] = math.atan2(2.0 * (qw * qz + qx * qy),
-                                              1 - 2.0 * (qy * qy + qz * qz))
-
-    def cb_imu_vehicle(self, msg: Imu):
-        """Vehicle용 IMU 콜백 - /imu/processed"""
-        self.chart_data["g_longitudinal"] = msg.linear_acceleration.x / G_CONST
-        self.chart_data["g_lateral"] = msg.linear_acceleration.y / G_CONST
+                                              1 - 2.0 * (qy * qy + qz * qz))        
 
     # === WebSocket 관련 ===
     def start_loop(self):

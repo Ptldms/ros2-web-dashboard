@@ -8,7 +8,7 @@ import HealthStatus from './components/health_status';
 function App() {
   return (
     <div className='dashboard'>
-      {/* 위쪽: Yaw (PlotJuggler) + Yaw (NavBall) + G-Force Meter*/}
+      {/* 위쪽: Yaw (PlotJuggler) + G-Force Meter*/}
       <div className='top-row'>
         <div className='card'>
           <h2 className="card-title">Yaw Estimation (PlotJuggler)</h2>
