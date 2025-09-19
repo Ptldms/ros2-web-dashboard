@@ -12,18 +12,15 @@ const perception = [
 const planning = [
   { name: "Global", unit: "pts" },
   { name: "Local", unit: "Hz" },
+  { name: "Steering Angle", unit: "°"},
   { name: "Speed", unit: "m/s" },
-  { name: "Corridor", unit: "m" },
-  { name: "Cones(L)", unit: "" },
-  { name: "Cones(R)", unit: "" },
 ]
 
 const control = [
-  { name: "Steer", unit: "Hz" },
-  { name: "RPM", unit: "rpm" },
+  { name: "Steer", unit: "°" },
+  { name: "Speed", unit: "m/s" },
   { name: "CAN TX", unit: "Hz" },
   { name: "CAN RX", unit: "rpm" },
-  { name: "Error", unit: "°" },
   { name: "Arduino", unit: "Hz" },
 ]
 
