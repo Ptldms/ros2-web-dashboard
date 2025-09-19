@@ -20,23 +20,51 @@ export default function YawChart() {
     const ws = new WebSocket(`ws://${host}:${port}`);
 
     ws.onmessage = (event) => {
-      const message = JSON.parse(event.data); // 통합 JSON
-      const now = Date.now();
-      const elapsedSec = (now - startTimeRef.current) / 1000;
+      try {
+        const message = JSON.parse(event.data);
+        const now = Date.now();
+        const elapsedSec = (now - startTimeRef.current) / 1000;
 
-      setData((prev) => {
-        const last = prev[prev.length - 1] || {};
+        // type이 chart일 때만 처리
+        if (message.type === 'chart' && message.data) {
+          setData((prev) => {
+            const last = prev[prev.length - 1] || {};
 
-        // yaw 값이 없으면 이전 값 유지
-        const merged = {
-          time: elapsedSec,
-          raw: message.yaw !== undefined ? message.yaw : last.raw,
-        };
+            // yaw 값이 없으면 이전 값 유지
+            const merged = {
+              time: elapsedSec,
+              raw: message.data.yaw !== undefined ? message.data.yaw : last.raw,
+            };
 
-        const updated = [...prev, merged];
-        // 최근 50초 데이터만 유지
-        return updated.filter((point) => elapsedSec - point.time <= 50);
-      });
+            const updated = [...prev, merged];
+            // 최근 50초 데이터만 유지
+            return updated.filter((point) => elapsedSec - point.time <= 50);
+          });
+        } else if (!message.type) {
+          // 기존 방식 호환성 (type이 없는 경우)
+          setData((prev) => {
+            const last = prev[prev.length - 1] || {};
+
+            const merged = {
+              time: elapsedSec,
+              raw: message.yaw !== undefined ? message.yaw : last.raw,
+            };
+
+            const updated = [...prev, merged];
+            return updated.filter((point) => elapsedSec - point.time <= 50);
+          });
+        }
+      } catch (error) {
+        console.error('YawChart WebSocket parse error:', error);
+      }
+    };
+
+    ws.onopen = () => {
+      console.log("YawChart WebSocket connected");
+    };
+
+    ws.onerror = (error) => {
+      console.error("YawChart WebSocket error:", error);
     };
 
     return () => ws.close();

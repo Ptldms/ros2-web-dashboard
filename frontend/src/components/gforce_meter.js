@@ -11,15 +11,36 @@ export default function GForceMeter() {
 
 
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+      try {
+        const message = JSON.parse(event.data);
 
-      // g_longitudinal: 앞뒤, g_lateral: 좌우
-      if (data.g_longitudinal !== undefined && data.g_lateral !== undefined) {
-        setGForce({
-          g_longitudinal: data.g_longitudinal * G_TO_MS2,
-          g_lateral: data.g_lateral * G_TO_MS2,
-        });
+        if (message.type === 'chart' && message.data) {
+          const { g_longitudinal, g_lateral } = message.data;
+          if (g_longitudinal !== undefined && g_lateral !== undefined) {
+            setGForce({
+              g_longitudinal: g_longitudinal * G_TO_MS2,
+              g_lateral: g_lateral * G_TO_MS2,
+            });
+          }
+        } else if (!message.type) {
+          if (message.g_longitudinal !== undefined && message.g_lateral !== undefined) {
+            setGForce({
+              g_longitudinal: message.g_longitudinal * G_TO_MS2,
+              g_lateral: message.g_lateral * G_TO_MS2,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('GForceMeter WebSocket parse error:', error);
       }
+    };
+
+    ws.onopen = () => {
+      console.log("GForceMeter WebSocket connected");
+    };
+
+    ws.onerror = (error) => {
+      console.error("GForceMeter WebSocket error:", error);
     };
 
     return () => ws.close();

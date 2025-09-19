@@ -1,4 +1,3 @@
-import logo from './logo.svg';
 import './App.css';
 import YawChart from './components/yaw_chart';
 import GForceMeter from './components/gforce_meter';
@@ -13,15 +12,11 @@ function App() {
       <div className='top-row'>
         <div className='card'>
           <h2 className="card-title">Yaw Estimation (PlotJuggler)</h2>
-          {/*<YawChart />*/}
-        </div>
-        <div className='card'>
-          <h2 className="card-title">YAW Estimation (NavBall)</h2>
-          {/*<YawNavBall />*/}
+          <YawChart />
         </div>
         <div className='card'>
           <h2 className="card-title">G-Force Meter</h2>
-          {/*<GForceMeter />*/}
+          <GForceMeter />
         </div>
       </div>
 
@@ -29,11 +24,11 @@ function App() {
       <div className='middle-row'>
         <div className='card'>
           <h2 className="card-title">Speed Comparison</h2>
-          {/*<SpeedChart />*/}
+          <SpeedChart />
         </div>
         <div className='card'>
           <h2 className="card-title">Steering Comparison</h2>
-          {/*<SteerChart />*/}
+          <SteerChart />
         </div>
       </div>
       {/* 아래쪽: Speed + Steering */}

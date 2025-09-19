@@ -1,30 +1,32 @@
-import asyncio
-import json
 import rclpy
 from rclpy.node import Node
-
 from sensor_msgs.msg import Image, PointCloud2, NavSatFix, Imu
-from nav_msgs.msg import Path
+from nav_msgs.msg import Path, Odometry
 from std_msgs.msg import Float32MultiArray, Float32, Int32, UInt8
 from visualization_msgs.msg import Marker
 # from throttle_msgs.msg import ThrottleData
+from rclpy.qos import QoSProfile, ReliabilityPolicy
 
-import websockets
-import time
+import asyncio
 import threading
-from collections import deque
+import websockets
+import json
 import math
+import time
+from collections import deque
 
-class MonitorNode(Node):
+G_CONST = 9.81
+
+
+class FullWSNode(Node):
     def __init__(self):
-        super().__init__('monitor_node')
+        super().__init__('full_ws_node')
 
+        # ROS2 파라미터
         self.declare_parameter('ws_host', 'localhost')
         self.declare_parameter('ws_port', 5000)
-
         self.ws_host = self.get_parameter('ws_host').get_parameter_value().string_value
         self.ws_port = self.get_parameter('ws_port').get_parameter_value().integer_value
-
         self.get_logger().info(f"WebSocket Server will bind on {self.ws_host}:{self.ws_port}")
 
         # websocket 관련
@@ -32,12 +34,6 @@ class MonitorNode(Node):
         self.ws = None
         self.thread = threading.Thread(target=self.start_loop, daemon=True)
         self.thread.start()
-
-        # 데이터 전송 주기
-        self.create_timer(1.0, self.trigger_send)
-
-        # Hz 설정
-        self.window_size = 20
 
         # sensor 기본 설정 (topic별 모니터링 조건)
         self.sensor_config = {
@@ -125,19 +121,32 @@ class MonitorNode(Node):
         # 실시간 센서 데이터값
         self.sensor_data = {}
 
+        # Hz 설정
+        self.window_size = 20
+
         # 각 토픽별 timestamps deque 준비
         self.timestamps = {
             topic: deque(maxlen=self.window_size) for topic in self.sensor_config.keys()
         }
 
-        # TODO: 토픽 수정
+        # Chart 데이터
+        self.chart_data = {
+            "cmd_speed": None,
+            "current_speed": None,
+            "cmd_steer": None,
+            "yaw": None,
+            "g_longitudinal": None,
+            "g_lateral": None
+        }
+
+        # Monitor Subscriber
         self.create_subscription(Image, "/usb_cam_1/image_raw", self.cam1_cb, 10)                 # Cam1
         self.create_subscription(Image, "/usb_cam_2/image_raw", self.cam2_cb, 10)                 # Cam2
-        self.create_subscription(PointCloud2, "/ouster/points", self.lidar_cb, 10)                      # LiDAR
-        self.create_subscription(Marker, "/cone/fused", self.fusion_cb, 10)                        # Fusion
+        self.create_subscription(PointCloud2, "/ouster/points", self.lidar_cb, 10)                # LiDAR
+        self.create_subscription(Marker, "/cone/fused", self.fusion_cb, 10)                       # Fusion
         self.create_subscription(NavSatFix, "/ublox_gps_node/fix", self.gps_cb, 10)               # GPS
-        self.create_subscription(Imu, "/imu/data", self.imu_cb, 10)                             # IMU
-        self.create_subscription(Path, "/resampled_path", self.global_cb, 10)                    # Global
+        self.create_subscription(Imu, "/imu/data", self.imu_cb, 10)                               # IMU
+        self.create_subscription(Path, "/resampled_path", self.global_cb, 10)                     # Global
         self.create_subscription(Path, "/local_planned_path", self.local_cb, 10)                  # Local
         self.create_subscription(Float32MultiArray, "/desired_speed_profile", self.speed_cb, 10)  # Speed        
         self.create_subscription(Marker, "/drivable_corridor", self.corridor_cb, 10)              # Corridor
@@ -145,11 +154,25 @@ class MonitorNode(Node):
         self.create_subscription(Marker, "/right_cone_marker", self.conesR_cb, 10)                # Cones(R)
         self.create_subscription(Float32, "/steering_command", self.steer_cb, 10)                 # Steer
         self.create_subscription(Int32, "/target_rpm", self.rpm_cb, 10)                           # RPM
-        self.create_subscription(Int32, "/current_speed", self.canRX_cb, 10)                      # CAN RX
+        self.create_subscription(Float32, "/current_speed", self.canRX_cb, 10)                    # CAN RX
         self.create_subscription(Float32, "/encoder_angle", self.error_cb, 10)                    # Error
-        # self.create_subscription(ThrottleData, "/throttle_data", self.arduino_cb, 10)             # Arduino (.data: E-STOP, .asms: MODE)
+        # self.create_subscription(ThrottleData, "/throttle_data", self.arduino_cb, 10)           # Arduino (.data: E-STOP, .asms: MODE)
         self.create_subscription(UInt8, "/estop", self.aeb_cb, 10)                                # AEB (cone_labeling_k)
 
+        # Chart Subscriber
+        self.create_subscription(Float32, '/cmd/speed', self.cb_cmd_speed, 10)
+        self.create_subscription(Float32, '/cmd/steer', self.cb_cmd_steer, 10)
+        self.create_subscription(Odometry, '/odometry/filtered', self.cb_odometry, 10)
+        qos_profile = QoSProfile(depth=10)
+        qos_profile.reliability = ReliabilityPolicy.BEST_EFFORT
+        self.create_subscription(Imu, '/imu/processed', self.cb_imu_vehicle, qos_profile)
+
+        # 데이터 전송 주기
+        self.create_timer(1.0, self.trigger_send_monitor)
+        self.create_timer(0.033, self.trigger_send_chart)
+
+
+    # === Monitor Callback ===
     def cam1_cb(self, msg):
         topic = "/usb_cam_1/image_raw"
         self._update_timestamps(topic)
@@ -445,6 +468,7 @@ class MonitorNode(Node):
             "value": rpm,
             "color": "lime" if is_ok else "red"
         }
+        self.chart_data["current_speed"] = float(rpm)
 
     def error_cb(self, msg):
         topic = "/encoder_angle"
@@ -498,6 +522,30 @@ class MonitorNode(Node):
             "color": "lime" if is_ok else "red"
         }
 
+    # === Chart Callback ===
+    def cb_cmd_speed(self, msg):
+        self.chart_data["cmd_speed"] = msg.data
+
+    def cb_cmd_steer(self, msg):
+        self.chart_data["cmd_steer"] = msg.data
+
+    def cb_odometry(self, msg):
+        qx, qy, qz, qw = (
+            msg.pose.pose.orientation.x,
+            msg.pose.pose.orientation.y,
+            msg.pose.pose.orientation.z,
+            msg.pose.pose.orientation.w,
+        )
+        # Yaw 계산 (Z축 기준)
+        self.chart_data["yaw"] = math.atan2(2.0 * (qw * qz + qx * qy),
+                                              1 - 2.0 * (qy * qy + qz * qz))
+
+    def cb_imu_vehicle(self, msg: Imu):
+        """Vehicle용 IMU 콜백 - /imu/processed"""
+        self.chart_data["g_longitudinal"] = msg.linear_acceleration.x / G_CONST
+        self.chart_data["g_lateral"] = msg.linear_acceleration.y / G_CONST
+
+    # === WebSocket 관련 ===
     def start_loop(self):
         asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(self.ws_handler())
@@ -508,8 +556,8 @@ class MonitorNode(Node):
             try:
                 async with websockets.connect(
                     uri,
-                    ping_interval=20,   # 20초마다 ping
-                    ping_timeout=10     # pong 없으면 10초 안에 timeout
+                    ping_interval=20,  # 20초마다 ping
+                    ping_timeout=10    # pong 없으면 10초 안에 timeout
                 ) as websocket:
                     self.get_logger().info("WebSocket connected")
                     self.ws = websocket
@@ -519,24 +567,27 @@ class MonitorNode(Node):
                 self.get_logger().warn(f"WebSocket connection failed: {e}")
                 await asyncio.sleep(3.0)  # 재시도 딜레이
 
-    def trigger_send(self):
+    def trigger_send_monitor(self):
         if self.ws is not None:
-            asyncio.run_coroutine_threadsafe(self.send_data(), self.loop)
+            asyncio.run_coroutine_threadsafe(self.send_monitor_data(), self.loop)
 
+    def trigger_send_chart(self):
+        if self.ws is not None:
+            asyncio.run_coroutine_threadsafe(self.send_chart_data(), self.loop)
+
+    # === 유틸리티 함수들 ===
     def _update_timestamps(self, topic):
-        now= time.time()
+        now = time.time()
         self.timestamps[topic].append(now)
 
     def calculate_hz(self, topic):
         times = self.timestamps[topic]
-
         if len(times) < 2:
             return 0.0
-        
         duration = times[-1] - times[0]
         hz = (len(times) - 1) / duration if duration > 0 else 0.0
         return round(hz, 1)
-    
+
     def get_sensor_data(self):
         data = {}
         for topic, config in self.sensor_config.items():
@@ -546,22 +597,20 @@ class MonitorNode(Node):
                 "value": None,
                 "color": "gray"
             })
-
+            
             # value가 숫자면 소수점 첫째자리까지 반올림
             if isinstance(value.get("value"), (int, float)):
                 value["value"] = round(value["value"], 1)
-
             data[name] = value
         return data
-    
+
     def get_alerts(self):
         alerts = []
-
-        data = self.get_sensor_data()  # 센서 이름 기준
+        data = self.get_sensor_data()
 
         # CRITICAL
         estop = data.get("AEB")
-        if estop and estop.get("status") == "NO-GO":
+        if estop and estop.get("status") == "E-STOP":
             alerts.append({"level": "CRITICAL", "message": "E-STOP 활성화"})
 
         can_speed = data.get("CAN RX")
@@ -577,66 +626,61 @@ class MonitorNode(Node):
         if gps and gps.get("status") == "NO-GO":
             alerts.append({"level": "WARNING", "message": "GPS 정확도 감소"})
 
-        fusion = data.get("Fusion")
-        if fusion and fusion.get("value", 0) < 4:
+        fusion = data.get("Fusion", {})
+        fusion_value = fusion.get("value", 0)
+        if isinstance(fusion_value, (int, float)) and fusion_value < 4:
             alerts.append({"level": "WARNING", "message": "콘 감지 부족 (<4개)"})
 
-        error = data.get("Error")
-        if error and abs(error.get("value", 0)) > 2.0:
+        error = data.get("Error", {})
+        error_value = error.get("value", 0)
+        if isinstance(error_value, (int, float)) and abs(error_value) > 2.0:
             alerts.append({"level": "WARNING", "message": "제어 추종 오차 증가"})
 
         return alerts
 
-
-    async def send_data(self):
-        data = self.get_sensor_data()
-        alerts = self.get_alerts()
-
+    async def send_monitor_data(self):
         try:
-            # ws가 None이 아니고 연결 상태이면 전송 시도
             if self.ws is None:
-                self.get_logger().warn("WebSocket is None, skip sending")
                 return
 
-            # JSON으로 직렬화
-            try:
-                payload = json.dumps({
-                    "sensors": [{"name": key, **value} for key, value in data.items()],
-                    "alerts": alerts
-                })
-            except TypeError:
-                # 직렬화 불가하면 fallback
-                safe_data = {}
+            sensor_data = self.get_sensor_data()
+            alerts = self.get_alerts()
 
-                for k, v in data.items():
-                    try:
-                        json.dumps(v)
-                        safe_data[k] = v
-                    except TypeError:
-                        safe_data[k] = {
-                            "status": str(v.get("status", "")) if isinstance(v, dict) else str(v),
-                            "value": str(v.get("value", "")) if isinstance(v, dict) else str(v),
-                            "color": str(v.get("color", "gray")) if isinstance(v, dict) else "gray"
-                        }
-                payload = json.dumps({
-                    "sensors": safe_data,
-                    "alerts": alerts
-                })
+            payload = json.dumps({
+                "type": "monitor",
+                "sensors": [{"name": key, **value} for key, value in sensor_data.items()],
+                "alerts": alerts
+            })
 
             await self.ws.send(payload)
 
         except Exception as e:
-            # 경고 로그 남기고 ws 객체 초기화해 재접속 시도하게 함
             self.get_logger().warn(f"Send failed: {e}")
-            try:
-                # 안전하게 ws 참조 해제
-                self.ws = None
-            except Exception:
-                pass
+            self.ws = None
+
+    async def send_chart_data(self):
+        try:
+            if self.ws is None:
+                return
+
+            # None이 아닌 데이터만 전송
+            payload = {k: v for k, v in self.chart_data.items() if v is not None}
+            
+            if payload:
+                chart_payload = {
+                    "type": "chart",
+                    "data": payload
+                }
+                await self.ws.send(json.dumps(chart_payload))
+
+        except Exception as e:
+            self.get_logger().warn(f"Chart send failed: {e}")
+            self.ws = None
+
 
 def main():
     rclpy.init()
-    node = MonitorNode()
+    node = FullWSNode()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
