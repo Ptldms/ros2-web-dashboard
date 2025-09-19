@@ -324,7 +324,7 @@ class FullWSNode(Node):
         is_ok = speed is not None
 
         self.sensor_data[topic] = {
-            "status": "GO" if is_ok else "NO-GO",
+            "status": "None",
             "value": speed,
             "color": "lime" if is_ok else "red"
         }
@@ -341,7 +341,7 @@ class FullWSNode(Node):
         is_ok = steer is not None
 
         self.sensor_data[topic] = {
-            "status": "GO" if is_ok else "NO-GO",
+            "status": "None",
             "value": steer,
             "color": "lime" if is_ok else "red"
         }
