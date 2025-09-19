@@ -1,4 +1,3 @@
-import logo from './logo.svg';
 import './App.css';
 import YawChart from './components/yaw_chart';
 import GForceMeter from './components/gforce_meter';
