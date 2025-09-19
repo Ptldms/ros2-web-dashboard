@@ -45,8 +45,22 @@ export default function HealthStatus() {
     const ws = new WebSocket(`ws://${host}:${port}`);
 
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data); // Python에서 보낸 JSON 파싱
+      try {
+        const data = JSON.parse(event.data);
 
+        if (data.type === 'monitor') {
+          // Monitor 데이터 처리
+          handleMonitorData(data);
+        } else if (!data.type) {
+          handleLegacyData(data);
+        }
+        
+      } catch (error) {
+        console.error('WebSocket message parse error:', error);
+      }
+    };
+
+    const handleMonitorData = (data) => {
       const newData = {};
       if (data.sensors) {
         const sensorArray = Array.isArray(data.sensors) ? data.sensors : Object.values(data.sensors);
@@ -54,7 +68,18 @@ export default function HealthStatus() {
           newData[item.name] = item;
         });
       }
+      setSensorData(newData);
+      setAlerts(data.alerts || []);
+    };
 
+    const handleLegacyData = (data) => {
+      const newData = {};
+      if (data.sensors) {
+        const sensorArray = Array.isArray(data.sensors) ? data.sensors : Object.values(data.sensors);
+        sensorArray.forEach((item) => {
+          newData[item.name] = item;
+        });
+      }
       setSensorData(newData);
       setAlerts(data.alerts || []);
     };

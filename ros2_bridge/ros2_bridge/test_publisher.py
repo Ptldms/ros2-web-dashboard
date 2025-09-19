@@ -30,7 +30,7 @@ class TestPublisherNode(Node):
         self.conesR_pub = self.create_publisher(Marker, "/right_cone_marker", 10)
         self.steer_pub = self.create_publisher(Float32, "/steering_command", 10)
         self.rpm_pub = self.create_publisher(Int32, "/target_rpm", 10)
-        self.canRX_pub = self.create_publisher(Int32, "/current_speed", 10)
+        self.canRX_pub = self.create_publisher(Float32, "/current_speed", 10)
         self.encoder_pub = self.create_publisher(Float32, "/encoder_angle", 10)
         self.aeb_pub = self.create_publisher(UInt8, "/estop", 10)
 
@@ -136,7 +136,7 @@ class TestPublisherNode(Node):
         self.rpm_pub.publish(Int32(data=random.randint(0, 2500)))
 
         # 13. CAN RX speed
-        self.canRX_pub.publish(Int32(data=random.randint(400, 800)))
+        self.canRX_pub.publish(Float32(data=random.uniform(400.0, 800.0)))
 
         # 14. Encoder
         self.encoder_pub.publish(Float32(data=random.uniform(-30.0, 30.0)))

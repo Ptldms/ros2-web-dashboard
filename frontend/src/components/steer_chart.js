@@ -21,31 +21,57 @@ export default function SteerChart() {
     const ws = new WebSocket(`ws://${host}:${port}`);
 
     ws.onmessage = (event) => {
-      const message = JSON.parse(event.data); // 통합 JSON
-      const now = Date.now();
-      const elapsedSec = (now - startTimeRef.current) / 1000;
+      try {
+        const message = JSON.parse(event.data);
+        const now = Date.now();
+        const elapsedSec = (now - startTimeRef.current) / 1000;
 
-      setData((prev) => {
-        const last = prev[prev.length - 1] || {};
+        // type이 chart일 때만 처리
+        if (message.type === 'chart' && message.data) {
+          setData((prev) => {
+            const last = prev[prev.length - 1] || {};
 
-        const merged = {
-          time: elapsedSec,
-          // 새 값이 있으면 업데이트, 없으면 직전 값 유지
-          cmd_steer:
-            message.cmd_steer !== undefined
-              ? message.cmd_steer
-              : last.cmd_steer,
-          // current_steer:
-          //   message.current_steer !== undefined
-          //     ? message.current_steer
-          //     : last.current_steer,
-        };
+            const merged = {
+              time: elapsedSec,
+              cmd_steer:
+                message.data.cmd_steer !== undefined
+                  ? message.data.cmd_steer
+                  : last.cmd_steer,
+            };
 
-        const updated = [...prev, merged];
-        // 50초 윈도우 유지
-        return updated.filter((point) => elapsedSec - point.time <= 50);
-      });
-    };  
+            const updated = [...prev, merged];
+            // 50초 윈도우 유지
+            return updated.filter((point) => elapsedSec - point.time <= 50);
+          });
+        } else if (!message.type) {
+          // 기존 방식 호환성 (type이 없는 경우)
+          setData((prev) => {
+            const last = prev[prev.length - 1] || {};
+
+            const merged = {
+              time: elapsedSec,
+              cmd_steer:
+                message.cmd_steer !== undefined
+                  ? message.cmd_steer
+                  : last.cmd_steer,
+            };
+
+            const updated = [...prev, merged];
+            return updated.filter((point) => elapsedSec - point.time <= 50);
+          });
+        }
+      } catch (error) {
+        console.error('SteerChart WebSocket parse error:', error);
+      }
+    };
+
+    ws.onopen = () => {
+      console.log("SteerChart WebSocket connected");
+    };
+
+    ws.onerror = (error) => {
+      console.error("SteerChart WebSocket error:", error);
+    }; 
 
     return () => ws.close();
   }, []);
